@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: novalys-deployment
+  namespace: default
+  labels:
+    app: novalys
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: novalys
+  template:
+    metadata:
+      labels:
+        app: novalys
+    spec:
+      containers:
+      - name: novalys
+        image: thefanta200/novalys:latest
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.2"
+            memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: novalys-service
+  namespace: default
+spec:
+  selector:
+    app: novalys
+  ports:
+  - port: 80
+    targetPort: 80
+    nodePort: 30080
+  type: LoadBalancer
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: novalys-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: novalys-deployment
+  minReplicas: 3
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 10
